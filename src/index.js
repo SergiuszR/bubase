@@ -64,6 +64,7 @@ function resetFormToInitialState() {
         emailInput.blur();
         submitButton.blur();
         emailInput.setCustomValidity('');
+        emailInput.removeAttribute('disabled');
         
         emailForm.style.display = '';
         emailForm.style.visibility = '';
@@ -195,8 +196,12 @@ function handleFormSuccess() {
     formSubmissionInProgress = false;
 
     const submitButton = document.getElementById('typeBtn');
+    const emailInput = document.getElementById('morphText');
     if (submitButton) {
         submitButton.value = "Let's Talk";
+    }
+    if (emailInput) {
+        emailInput.setAttribute('disabled', '');
     }
 
     currentTheme = {
@@ -210,7 +215,6 @@ function handleFormSuccess() {
     setTimeout(() => {
         isFormSubmitted = false;
         morphToCircle();
-        
         setTimeout(() => {
             resetFormToInitialState();
         }, 500);
@@ -904,19 +908,9 @@ window.addEventListener('resize', () => {
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        // Disable email input initially
-        const emailInput = document.getElementById('morphText');
-        if (emailInput) {
-            emailInput.setAttribute('disabled', '');
-        }
         setTimeout(init, 500);
     });
 } else {
-    // Disable email input initially
-    const emailInput = document.getElementById('morphText');
-    if (emailInput) {
-        emailInput.setAttribute('disabled', '');
-    }
     setTimeout(init, 500);
 }
 
