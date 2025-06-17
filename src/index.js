@@ -904,9 +904,19 @@ window.addEventListener('resize', () => {
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
+        // Disable email input initially
+        const emailInput = document.getElementById('morphText');
+        if (emailInput) {
+            emailInput.setAttribute('disabled', '');
+        }
         setTimeout(init, 500);
     });
 } else {
+    // Disable email input initially
+    const emailInput = document.getElementById('morphText');
+    if (emailInput) {
+        emailInput.setAttribute('disabled', '');
+    }
     setTimeout(init, 500);
 }
 
