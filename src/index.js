@@ -79,6 +79,7 @@ function resetFormToInitialState() {
         
         thanksAnimationTriggered = false;
         formSubmissionInProgress = false;
+        isFormSubmitted = false;
     }
 }
 
@@ -93,6 +94,9 @@ function setupEmailValidation() {
     
     if (!emailInput || !submitButton) return;
     
+    // Ensure button is disabled initially
+    submitButton.setAttribute('disabled', '');
+    
     function validateAndToggleButton() {
         const email = emailInput.value.trim();
         if (isValidEmail(email)) {
@@ -101,6 +105,9 @@ function setupEmailValidation() {
             submitButton.setAttribute('disabled', '');
         }
     }
+    
+    // Run initial validation
+    validateAndToggleButton();
     
     emailInput.addEventListener('keydown', validateAndToggleButton);
     emailInput.addEventListener('keyup', validateAndToggleButton);
@@ -136,12 +143,23 @@ function setupWebflowFormDetection() {
     });
 
     submitButton.addEventListener('click', (e) => {
-        if (!submitButton.hasAttribute('disabled') && !formSubmissionInProgress && !thanksAnimationTriggered) {
+        const emailInput = document.getElementById('morphText');
+        const email = emailInput ? emailInput.value.trim() : '';
+        
+        // Only proceed if button is enabled, email is valid, and not already in progress
+        if (!submitButton.hasAttribute('disabled') && 
+            isValidEmail(email) && 
+            !formSubmissionInProgress && 
+            !thanksAnimationTriggered) {
             formSubmissionInProgress = true;
             submitButton.value = 'One moment...';
             setTimeout(() => {
                 monitorForSuccessMessage();
             }, 200);
+        } else {
+            // Prevent any submission if conditions aren't met
+            e.preventDefault();
+            e.stopPropagation();
         }
     });
 
@@ -171,8 +189,13 @@ function setupWebflowFormDetection() {
             if (attempts < maxAttempts) {
                 setTimeout(checkForSuccess, 100);
             } else {
+                // If we reach max attempts without success, reset form state
                 formSubmissionInProgress = false;
-                handleFormSuccess();
+                const submitButton = document.getElementById('typeBtn');
+                if (submitButton) {
+                    submitButton.value = "Let's Talk";
+                }
+                // Don't trigger thanks animation if no success detected
             }
         };
         
@@ -264,6 +287,12 @@ function init() {
     createActionButtons();
 
     setTimeout(() => {
+        // Ensure button is disabled immediately when elements are available
+        const submitButton = document.getElementById('typeBtn');
+        if (submitButton) {
+            submitButton.setAttribute('disabled', '');
+        }
+        
         setupWebflowFormDetection();
         setupEmailValidation();
     }, 1000);
@@ -919,6 +948,15 @@ function interceptFormSubmission() {
 
     if (emailForm) {
         emailForm.addEventListener('submit', async function(e) {
+            const emailInput = document.getElementById('morphText');
+            const email = emailInput ? emailInput.value.trim() : '';
+            
+            // Prevent submission if email is invalid
+            if (!isValidEmail(email)) {
+                e.preventDefault();
+                return;
+            }
+            
             e.preventDefault();
             
             const formData = new FormData(emailForm);
@@ -934,9 +972,19 @@ function interceptFormSubmission() {
                 if (result.success) {
                     handleFormSuccess();
                 } else {
+                    const submitButton = document.getElementById('typeBtn');
+                    if (submitButton) {
+                        submitButton.value = "Let's Talk";
+                    }
+                    formSubmissionInProgress = false;
                     alert(result.message || 'Something went wrong. Please try again.');
                 }
             } catch (error) {
+                const submitButton = document.getElementById('typeBtn');
+                if (submitButton) {
+                    submitButton.value = "Let's Talk";
+                }
+                formSubmissionInProgress = false;
                 alert('Network error. Please try again.');
             }
         });
@@ -945,4 +993,4 @@ function interceptFormSubmission() {
 
 setTimeout(() => {
     interceptFormSubmission();
-}, 1000);
+}, 1000);   
