@@ -109,12 +109,52 @@ function setupEmailValidation() {
     // Run initial validation
     validateAndToggleButton();
     
+    // Set up input event listeners
     emailInput.addEventListener('keydown', validateAndToggleButton);
     emailInput.addEventListener('keyup', validateAndToggleButton);
     emailInput.addEventListener('input', validateAndToggleButton);
     emailInput.addEventListener('paste', () => {
         setTimeout(validateAndToggleButton, 10);
     });
+    
+    // Add a MutationObserver to watch for external changes to the button
+    const buttonObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'disabled') {
+                // If something else tries to enable the button, check email validity
+                const email = emailInput.value.trim();
+                if (!isValidEmail(email) && !submitButton.hasAttribute('disabled')) {
+                    // Re-disable if email is invalid
+                    setTimeout(() => {
+                        submitButton.setAttribute('disabled', '');
+                    }, 0);
+                }
+            }
+        });
+    });
+    
+    buttonObserver.observe(submitButton, {
+        attributes: true,
+        attributeFilter: ['disabled']
+    });
+    
+    // Also add a periodic check to ensure button state is correct
+    const intervalCheck = setInterval(() => {
+        const email = emailInput.value.trim();
+        const shouldBeEnabled = isValidEmail(email);
+        const isCurrentlyEnabled = !submitButton.hasAttribute('disabled');
+        
+        if (shouldBeEnabled !== isCurrentlyEnabled) {
+            if (shouldBeEnabled) {
+                submitButton.removeAttribute('disabled');
+            } else {
+                submitButton.setAttribute('disabled', '');
+            }
+        }
+    }, 500);
+    
+    // Store the interval so we can clear it if needed
+    submitButton._validationInterval = intervalCheck;
 }
 
 function setupWebflowFormDetection() {
@@ -132,6 +172,17 @@ function setupWebflowFormDetection() {
         mutations.forEach((mutation) => {
             if (mutation.type === 'attributes' && mutation.attributeName === 'disabled') {
                 const isNowDisabled = submitButton.hasAttribute('disabled');
+                
+                // If button was enabled but email is invalid, re-disable it
+                if (!isNowDisabled) {
+                    const email = emailInput.value.trim();
+                    if (!isValidEmail(email)) {
+                        setTimeout(() => {
+                            submitButton.setAttribute('disabled', '');
+                        }, 0);
+                    }
+                }
+                
                 buttonWasDisabled = isNowDisabled;
             }
         });
@@ -286,7 +337,23 @@ function init() {
     setupMouseControls();
     createActionButtons();
 
+    // Set up immediate button disabling to prevent Webflow from enabling it
+    const quickDisableCheck = setInterval(() => {
+        const submitButton = document.getElementById('typeBtn');
+        const emailInput = document.getElementById('morphText');
+        
+        if (submitButton && emailInput) {
+            const email = emailInput.value.trim();
+            if (!isValidEmail(email)) {
+                submitButton.setAttribute('disabled', '');
+            }
+        }
+    }, 100);
+    
     setTimeout(() => {
+        // Clear the quick check interval
+        clearInterval(quickDisableCheck);
+        
         // Ensure button is disabled immediately when elements are available
         const submitButton = document.getElementById('typeBtn');
         if (submitButton) {
