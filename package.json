@@ -1,0 +1,27 @@
+{
+  "name": "bubase",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "bundle": "rimraf dist && webpack --mode production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SergiuszR/bubase.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/SergiuszR/bubase/issues"
+  },
+  "homepage": "https://github.com/SergiuszR/bubase#readme",
+  "devDependencies": {
+    "rimraf": "^6.0.1",
+    "webpack": "^5.99.9",
+    "webpack-cli": "^6.0.1"
+  }
+}
