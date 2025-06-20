@@ -1,5 +1,3 @@
-const emailValidator = require('./emailValidator.js');
-
 let scene, camera, renderer, particles;
 const count = 20000;
 let currentState = 'sphere';
@@ -79,9 +77,6 @@ function resetFormToInitialState() {
             formContainer.style.opacity = '';
         }
         
-        // Reset email validation status
-        hideValidationStatus();
-        
         thanksAnimationTriggered = false;
         formSubmissionInProgress = false;
         isFormSubmitted = false;
@@ -89,105 +84,8 @@ function resetFormToInitialState() {
 }
 
 function isValidEmail(email) {
-    return emailValidator.isValidFormat(email);
-}
-
-// Create and show email validation status
-function createValidationStatusElement() {
-    // Remove existing status element
-    const existingStatus = document.getElementById('email-validation-status');
-    if (existingStatus) {
-        existingStatus.remove();
-    }
-
-    // Create new status element
-    const statusElement = document.createElement('div');
-    statusElement.id = 'email-validation-status';
-    statusElement.style.cssText = `
-        margin-top: 10px;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 14px;
-        text-align: center;
-        transition: all 0.3s ease;
-        opacity: 0;
-        transform: translateY(-10px);
-    `;
-
-    // Insert after the email input
-    const emailInput = document.getElementById('morphText');
-    if (emailInput && emailInput.parentNode) {
-        emailInput.parentNode.insertBefore(statusElement, emailInput.nextSibling);
-    }
-
-    return statusElement;
-}
-
-function updateValidationStatus(result) {
-    const statusElement = document.getElementById('email-validation-status') || createValidationStatusElement();
-    
-    // Determine styling based on status
-    let backgroundColor, textColor, icon;
-    
-    switch (result.status) {
-        case 'valid':
-            backgroundColor = '#d4edda';
-            textColor = '#155724';
-            icon = '✅';
-            break;
-        case 'spam_risk':
-            backgroundColor = '#f8d7da';
-            textColor = '#721c24';
-            icon = '⚠️';
-            break;
-        case 'risky':
-            backgroundColor = '#fff3cd';
-            textColor = '#856404';
-            icon = '🔍';
-            break;
-        case 'checking':
-            backgroundColor = '#cce7ff';
-            textColor = '#004085';
-            icon = '🔄';
-            break;
-        case 'error':
-            backgroundColor = '#f1f3f4';
-            textColor = '#5f6368';
-            icon = '❓';
-            break;
-        default:
-            backgroundColor = '#f1f3f4';
-            textColor = '#5f6368';
-            icon = '';
-    }
-
-    statusElement.style.backgroundColor = backgroundColor;
-    statusElement.style.color = textColor;
-    statusElement.style.border = `1px solid ${textColor}20`;
-    statusElement.innerHTML = `${icon} ${result.message}`;
-    
-    // Animate in
-    setTimeout(() => {
-        statusElement.style.opacity = '1';
-        statusElement.style.transform = 'translateY(0)';
-    }, 10);
-
-    // Hide after delay for non-critical statuses
-    if (result.status === 'checking') {
-        // Keep visible while checking
-    } else if (result.status === 'valid') {
-        setTimeout(() => {
-            statusElement.style.opacity = '0.7';
-        }, 3000);
-    }
-}
-
-function hideValidationStatus() {
-    const statusElement = document.getElementById('email-validation-status');
-    if (statusElement) {
-        statusElement.style.opacity = '0';
-        statusElement.style.transform = 'translateY(-10px)';
-    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
 }
 
 function setupEmailValidation() {
@@ -199,79 +97,12 @@ function setupEmailValidation() {
     // Ensure button is disabled initially
     submitButton.setAttribute('disabled', '');
     
-    let validationTimeout;
-    let lastValidatedEmail = '';
-    
-    // Debounced spam checking function
-    const debouncedSpamCheck = emailValidator.debounce(async (email) => {
-        if (email === lastValidatedEmail) return;
-        lastValidatedEmail = email;
-        
-        if (!isValidEmail(email)) {
-            hideValidationStatus();
-            return;
-        }
-        
-        // Show checking status
-        updateValidationStatus({
-            status: 'checking',
-            message: 'Checking email...'
-        });
-        
-        try {
-            const result = await emailValidator.validateEmail(email);
-            
-            // Only update if this is still the current email
-            if (email === emailInput.value.trim()) {
-                updateValidationStatus(result);
-                
-                // Enable/disable button based on result
-                if (result.isValid && result.status !== 'spam_risk') {
-                    submitButton.removeAttribute('disabled');
-                } else if (result.status === 'spam_risk') {
-                    // Allow submission but warn user
-                    submitButton.removeAttribute('disabled');
-                } else {
-                    submitButton.setAttribute('disabled', '');
-                }
-            }
-        } catch (error) {
-            console.error('Email validation failed:', error);
-            // Allow submission on error
-            if (email === emailInput.value.trim()) {
-                updateValidationStatus({
-                    status: 'error',
-                    message: 'Unable to verify email - proceeding with caution'
-                });
-                submitButton.removeAttribute('disabled');
-            }
-        }
-    }, 1500); // 1.5 second delay after user stops typing
-    
     function validateAndToggleButton() {
         const email = emailInput.value.trim();
-        
-        // Clear existing timeout
-        if (validationTimeout) {
-            clearTimeout(validationTimeout);
-        }
-        
-        if (!email) {
-            hideValidationStatus();
-            submitButton.setAttribute('disabled', '');
-            lastValidatedEmail = '';
-            return;
-        }
-        
         if (isValidEmail(email)) {
-            // Enable button immediately for valid format
             submitButton.removeAttribute('disabled');
-            
-            // Schedule spam check
-            debouncedSpamCheck(email);
         } else {
             submitButton.setAttribute('disabled', '');
-            hideValidationStatus();
         }
     }
     
@@ -284,13 +115,6 @@ function setupEmailValidation() {
     emailInput.addEventListener('input', validateAndToggleButton);
     emailInput.addEventListener('paste', () => {
         setTimeout(validateAndToggleButton, 10);
-    });
-    
-    // Clear validation when input is focused and cleared
-    emailInput.addEventListener('focus', () => {
-        if (!emailInput.value.trim()) {
-            hideValidationStatus();
-        }
     });
     
     // Add a MutationObserver to watch for external changes to the button
